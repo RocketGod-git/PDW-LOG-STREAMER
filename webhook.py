@@ -26,6 +26,11 @@ def main():
                             message = line.split(None, 6)[-1] if len(line.split()) > 6 else line
                             send_message_to_discord(message)
                             print(f'Sent message: {message}')
+                    
+                # check if a new day has started and if so, reset the last_position and sent_lines
+                if get_current_log_file_path() != log_file_path:
+                    last_position = 0
+                    sent_lines = set()
 
         except FileNotFoundError as e:
             print(f'Error: {e}. Check if the log file exists and has the correct format.')
