@@ -35,6 +35,8 @@ def main():
 
         except FileNotFoundError as e:
             print(f'Error: {e}. Check if the log file exists and has the correct format.')
+        except IOError as e:
+            print(f'I/O error: {e}')
         except Exception as e:
             print(f'Unexpected error: {e}')
 
