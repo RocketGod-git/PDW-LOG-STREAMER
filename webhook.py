@@ -1,16 +1,17 @@
 import os
 import time
-import requests
+import json
 from datetime import datetime
 
 LOG_FILE_DIR = './'
 LOG_FILE_FORMAT = '%y%m%d.log'
-WEBHOOK_URL = 'PUT YOUR WEBHOOK HERE'
+CONFIG_FILE = 'config.json'
 DELAY = 5  # Check for new messages every 5 seconds. Adjust this value as needed.
 
 def main():
     last_position = get_end_of_log_file()
     sent_lines = set()
+    webhook_url = get_webhook_url()
     while True:
         try:
             log_file_path = get_current_log_file_path()
@@ -24,7 +25,7 @@ def main():
                         if line not in sent_lines:
                             sent_lines.add(line)
                             message = line.split(None, 6)[-1] if len(line.split()) > 6 else line
-                            send_message_to_discord(message)
+                            send_message_to_discord(message, webhook_url)
                             print(f'Sent message: {message}')
                     
                 # check if a new day has started and if so, reset the last_position and sent_lines
@@ -54,7 +55,7 @@ def get_end_of_log_file():
     except FileNotFoundError:
         return 0
 
-def send_message_to_discord(message):
+def send_message_to_discord(message, webhook_url):
     data = {
         'embeds': [
             {
@@ -64,7 +65,7 @@ def send_message_to_discord(message):
         ]
     }
     try:
-        response = requests.post(WEBHOOK_URL, json=data)
+        response = requests.post(webhook_url, json=data)
 
         if response.status_code != 204:
             print(f'Error sending message to Discord: {response.status_code}')
@@ -72,5 +73,23 @@ def send_message_to_discord(message):
     except Exception as e:
         print(f'Error sending message to Discord: {e}')
 
+def get_webhook_url():
+    try:
+        with open(CONFIG_FILE, 'r') as config_file:
+            config_data = json.load(config_file)
+            return config_data['webhook_url']
+    except FileNotFoundError as e:
+        print(f'Error: {e}. Check if the config file exists and has the correct format.')
+        exit(1)
+    except KeyError as e:
+        print(f'Error: {e}. Check if the webhook_url key exists in the config file.')
+        exit(1)
+
 if __name__ == '__main__':
+    try:
+        import requests
+    except ImportError:
+        print('requests module not found. Installing it now...')
+        os.system('pip install requests')
+        import requests
     main()
