@@ -13,32 +13,35 @@ def main():
     sent_lines = set()
     webhook_url = get_webhook_url()
     while True:
-        try:
-            log_file_path = get_current_log_file_path()
-            with open(log_file_path, 'r') as log_file:
-                log_file.seek(last_position)
-                lines = log_file.readlines()
-                if lines:
-                    last_position = log_file.tell()
-                    for line in lines:
-                        line = line.strip()
-                        if line not in sent_lines:
-                            sent_lines.add(line)
-                            message = line.split(None, 6)[-1] if len(line.split()) > 6 else line
-                            send_message_to_discord(message, webhook_url)
-                            print(f'Sent message: {message}')
+        log_file_path = get_current_log_file_path()
+        if os.path.exists(log_file_path):
+            try:
+                with open(log_file_path, 'r') as log_file:
+                    log_file.seek(last_position)
+                    lines = log_file.readlines()
+                    if lines:
+                        last_position = log_file.tell()
+                        for line in lines:
+                            line = line.strip()
+                            if line not in sent_lines:
+                                sent_lines.add(line)
+                                message = line.split(None, 6)[-1] if len(line.split()) > 6 else line
+                                send_message_to_discord(message, webhook_url)
+                                print(f'Sent message: {message}')
                     
-                # check if a new day has started and if so, reset the last_position and sent_lines
-                if get_current_log_file_path() != log_file_path:
-                    last_position = 0
-                    sent_lines = set()
+                    # check if a new day has started and if so, reset the last_position and sent_lines
+                    if get_current_log_file_path() != log_file_path:
+                        last_position = 0
+                        sent_lines = set()
 
-        except FileNotFoundError as e:
-            print(f'Error: {e}. Check if the log file exists and has the correct format.')
-        except IOError as e:
-            print(f'I/O error: {e}')
-        except Exception as e:
-            print(f'Unexpected error: {e}')
+            except IOError as e:
+                print(f'I/O error: {e}')
+            except Exception as e:
+                print(f'Unexpected error: {e}')
+        else:
+            print(f"Log file {log_file_path} not found. Waiting for it to be created...")
+            time.sleep(DELAY * 12)  # Wait for a longer period if the file doesn't exist.
+            continue  # Skip the rest of the loop and check again.
 
         time.sleep(DELAY)
 
